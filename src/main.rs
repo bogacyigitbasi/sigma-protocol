@@ -52,7 +52,7 @@ fn main() {
     let resp = (r + challenge * witness) % (p - 1);
     println!("Prover's response: z = {}", resp);
 
-    // final step verifier cchecks g^z mod p == a * y^c mod p
+    // final step verifier cchecks g^resp mod p == com * y^c mod p
     if (modular_exp(g, resp, p) == (com * modular_exp(y, challenge, p)) % p) {
         println!("Prover's response z {} is valid!", resp);
     } else {
