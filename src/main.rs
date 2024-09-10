@@ -31,6 +31,12 @@ impl Prover {
         let commitment = RISTRETTO_BASEPOINT_POINT * r;
         (commitment, r)
     }
+
+    // compute response using the commitment, challenge and witness
+    // resp = r + x*C
+    fn proof(&self, challenge: RistrettoPoint, r: Scalar) -> Scalar {
+        r + &self.privKey * challenge
+    }
 }
 
 fn main() {}
