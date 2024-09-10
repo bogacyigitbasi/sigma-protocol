@@ -7,4 +7,6 @@ edition = "2021"
 
 [dependencies]
 rand = "0.8"
+# curve library where we use the ed25519 curve
+curve25519-dalek = "4.0"
 
