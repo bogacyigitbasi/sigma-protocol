@@ -15,7 +15,7 @@ struct Prover {
 }
 
 // created to fix the error of Scalar::random it couldnt find the random
-fn generate_random_sclar(rng: &mut OsRng) -> Scalar {
+fn generate_random_scalar(rng: &mut OsRng) -> Scalar {
     let mut random_bytes = [0u8; 64]; // 64 byte array u8 random values
     rng.fill_bytes(&mut random_bytes); // fill random vars
     Scalar::from_bytes_mod_order_wide(&random_bytes) // return scalar
@@ -35,12 +35,13 @@ impl Prover {
     // prover generates the commitment
     // by selecting a random number r and computing G*r isntead of g^r mod p
     fn commit(&self, rng: &mut OsRng) -> (RistrettoPoint, Scalar) {
-        let r = generate_random_sclar(rng); // returns scalar
+        let r = generate_random_scalar(rng); // returns scalar
         let commitment = RISTRETTO_BASEPOINT_POINT * r;
         (commitment, r)
     }
 
     // compute response using the commitment, challenge and witness (privKey)
+    // and only public key can verify the privkey
     // resp = r + x*C
     fn proof(&self, challenge: &Scalar, r: &Scalar) -> Scalar {
         r + &self.privKey * challenge
@@ -53,11 +54,11 @@ struct Verifier {
 
 impl Verifier {
     fn generate_challenge(&mut self, rng: &mut OsRng) -> Scalar {
-        let r = generate_random_sclar(rng); // returns scalar
+        let r = generate_random_scalar(rng); // returns scalar
         self.challenge = r;
         self.challenge
     }
-    // g^z == a * y^z from previous ex
+    // public key is G^witness(private key)
     fn verify(
         &self,
         commitment: &RistrettoPoint,
@@ -73,19 +74,21 @@ fn main() {
     let mut rng = OsRng; // Secure random number generator from OS
 
     /// lets define the witness
-    let secret = generate_random_sclar(&mut rng);
-    let prover = Prover::new(secret); // Prover initialization
-
+    let secret = generate_random_scalar(&mut rng);
+    // Prover initialization, we generate the private and public keys.
+    let prover = Prover::new(secret);
+    // compute commitment
     let (commitment, random_scalar) = prover.commit(&mut rng); // Step 1: Prover generates a commitment
-
+                                                               // initialize the Verifier
     let mut verifier = Verifier {
         challenge: Scalar::ZERO,
-    }; // Initialize verifier with zero challenge
+    };
+    // generate a scalar challenge
     let challenge = verifier.generate_challenge(&mut rng); // Step 2: Verifier generates a challenge
-
+                                                           // response/proof generation
     let response = prover.proof(&challenge, &random_scalar); // Step 3: Prover computes the response
 
-    let is_valid = verifier.verify(&prover.pubKey, &commitment, &response); // Step 4: Verifier checks the response
+    let is_valid = verifier.verify(&commitment, &prover.pubKey, &response); // Step 4: Verifier checks the response
 
     println!("Verification result: {}", is_valid); // Output the verification result
 }
